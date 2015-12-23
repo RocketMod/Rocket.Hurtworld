@@ -88,7 +88,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="README" />
-    <None Include="Rocket.Hurtworld.nuspec" />
+    <None Include="Rocket.Hurtworld.nuspec">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
