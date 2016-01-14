@@ -10,8 +10,10 @@ using Rocket.Hurtworld.Events;
 using Rocket.Hurtworld.Serialisation;
 using Steamworks;
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 namespace Rocket.Hurtworld
@@ -53,15 +55,38 @@ namespace Rocket.Hurtworld
         {
             return Translations.Instance.Translate(translationKey, placeholder);
         }
-        
+
+#if !linux
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool AllocConsole();
+#endif
+
         internal static void Splash()
         {
+#if !linux
+            AllocConsole();
+#endif
             rocketGameObject = new GameObject("Rocket");
             DontDestroyOnLoad(rocketGameObject);
+
+            StreamWriter sw = new StreamWriter(Console.OpenStandardOutput());
+            sw.AutoFlush = true;
+            Console.SetOut(sw);
+            
+
+            StreamReader sr = new StreamReader(Console.OpenStandardInput());
+            Console.SetIn(sr);
 
             System.Console.Clear();
             System.Console.ForegroundColor = ConsoleColor.Cyan;
             System.Console.WriteLine("Rocket Hurtworld v" + Assembly.GetExecutingAssembly().GetName().Version.ToString() + " for Hurtworld v" + "UNKNOWN" + "\n");
+            
+
+
+            //Core.Logging.Logger.ExternalLog(message, color);
+
 
             R.OnRockedInitialized += () =>
             {
@@ -98,23 +123,7 @@ namespace Rocket.Hurtworld
                 };
 
                 R.Commands.RegisterFromAssembly(Assembly.GetExecutingAssembly());
-
-
-                try
-                {
-                    R.Plugins.OnPluginsLoaded += () =>
-                    {
-                        SteamGameServer.SetKeyValue("rocketplugins", String.Join(",", R.Plugins.GetPlugins().Select(p => p.Name).ToArray()));
-                    };
-
-                    SteamGameServer.SetKeyValue("rocket", Assembly.GetExecutingAssembly().GetName().Version.ToString());
-                    SteamGameServer.SetBotPlayerCount(1);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError("Steam can not be initialized: " + ex.Message);
-                }
-
+                
                 OnRocketImplementationInitialized.TryInvoke();
 
             }
@@ -135,11 +144,34 @@ namespace Rocket.Hurtworld
             throw new NotImplementedException();
         }
 
+        private bool steamInitialized = false;
+        private void FixedUpdate()
+        {
+            if (!steamInitialized && SteamworksManagerClient.Instance.InitializedServer)
+            {
+                steamInitialized = true;
+                try
+                {
+                    R.Plugins.OnPluginsLoaded += () =>
+                    {
+                        SteamGameServer.SetKeyValue("rocketplugins", String.Join(",", R.Plugins.GetPlugins().Select(p => p.Name).ToArray()));
+                    };
+
+                    SteamGameServer.SetKeyValue("rocket", Assembly.GetExecutingAssembly().GetName().Version.ToString());
+                    SteamGameServer.SetBotPlayerCount(1);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError("Steam can not be initialized: " + ex.Message);
+                }
+            }
+        }
+
         public string InstanceId
         {
             get
             {
-                throw new NotImplementedException();
+                return Singleton<GameManager>.Instance.ServerConfig.GameName;
             } 
         }
     }

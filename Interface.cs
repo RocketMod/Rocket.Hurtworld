@@ -12,13 +12,6 @@ namespace Rocket.Hurtworld
     {
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static void ExternalLog(string message, ConsoleColor color)
-        {
-            Core.Logging.Logger.ExternalLog(message, color);
-        }
-
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
         public static void Splash()
         {
             H.Splash();
@@ -30,6 +23,15 @@ namespace Rocket.Hurtworld
         {
             if (R.Commands != null)
                 return R.Commands.Execute(new RocketPlayer(player.ToString()), command);
+            return false;
+        }
+
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool ExecuteConsole(string command)
+        {
+            if (R.Commands != null)
+                return R.Commands.Execute(new ConsolePlayer(), command);
             return false;
         }
     }
